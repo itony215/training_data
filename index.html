@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    <title>Tony Stock</title>
+</head>
+<body>
+  <div class="wrap">
+    <div class="left">
+      <div id="app"></div> 
+    <div id="outer-container">
+      
+    <div class="controls">
+      
+        <button id="start">
+        Start
+        </button>
+        &nbsp;
+        <button id="buy_btn">
+          買進
+          </button>
+          &nbsp;
+          <button id="sell_btn">
+            賣出
+            </button>
+            &nbsp;
+            <span id="order">0</span>
+            &nbsp;
+            <span id="profit">0</span>
+    </div>
+    
+    <div id="container"></div>
+  </div>
+</div>
+  
+  <div id="history">history</div>
+  </div>
+</div>
+    <script>
+        let globalData = [];
+        let lastPrice=[]
+let chart;
+let cities =[
+  {
+    "name": "基隆",
+    "areas":[
+      {"name":"2ws","zip":200},
+      {"name":"sss","zip":100},
+      {"name":"fvvvv","zip":300}
+    ]
+  },
+  {
+    "name": "台北",
+    "areas":[
+      {"name":"rfv","zip":4400},
+      {"name":"sssc","zip":100},
+      {"name":"rtfvas","zip":3300}
+    ]
+  }
+]
+let duration = 500; // Determines how long the animation between new points should be take
+let startIterator = 0; // Determines how many points will be rendered on chart's init
+let currentIterator = startIterator;
+let maxIterator = 0;
+let guiButton = document.getElementById('start');
+let guiSell = document.getElementById('sell_btn');
+let guiBuy = document.getElementById('buy_btn');
+let order = document.getElementById('order');
+let profit = document.getElementById('profit');
+let history = document.getElementById('history');
+let guiButtonState = 'Start';
+let intervalId;
+let pre_price,top_price,bottom,cdp,al,nl,ah,nh;
+Vue.component('Select', {
+  props: ['value', 'options'],
+  computed:{
+    index:{
+      get(){
+        return this.value;
+      },
+      set(val){
+        this.$emit('input', val)
+      }
+    }
+  },
+  template:`
+    <select v-model="index">
+      <option v-for="(item, idx) in options" :value="idx">
+        {{item.name}}
+      </option>
+    </select>
+    `
+})
+new Vue({
+  el: '#app',
+  mounted(){
+    fetch('./data.json')
+    .then(res=>res.json())
+    .then(lessions=>{this.lessions=lessions
+    console.log(lessions)})
+  },
+  data:{
+    // cities:[],
+    lessions:[],
+    cityIdx:0,
+    areaIdx:0,
+  },
+  computed:{
+    cities(){
+      return cities;
+    },
+    areas(){
+      return cities[this.cityIdx].areas;
+    },
+    zip(){
+      return this.areas[this.areaIdx].zip;
+    }
+  },
+  watch:{
+    cityIdx(){
+      this.areaIdx =0;
+    }
+  },
+  template: `
+    <div>
+      {{cityIdx}} - {{areaIdx}} - {{zip}}
+      <br/>
+      <Select v-model="cityIdx" :options="cities"/>
+      <Select v-model="areaIdx" :options="areas"/>
+      <Select v-model="areaIdx" :options="lessions"/>
+      
+      
+    </div>
+    `
+
+})
+
+fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_3661.json')
+  .then(response => response.json())
+  .then(data => {
+    lastPrice= data
+  });
+// Fetch data:
+let offset = new Date().getTimezoneOffset();
+// fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
+fetch('https://raw.githubusercontent.com/itony215/test_data/main/20220818_3661.json')
+  .then(response => response.json())
+  .then(data => {
+    // console.log(data['timestamp'][0])
+    // get_yesterday_price(data['timestamp'][0])
+    parseData(data);
+    createChart();
+    initEvents();
+    // get_yesterday_price(data['timestamp'][0])
+  //   console.log(globalData[0].data[globalData[0].data.length-1][0])
+  // yesterday_price = get_yesterday_price(globalData[0].data[globalData[0].data.length-1][0])
+  // let pre_price = yesterday_price
+  // console.log(pre_price)
+  // data.map(item=>{
+  //     t0 = t1 - 86400000*2
+  //     t2 = t1 - 86400000
+  //     if(item[0]>t0 && item[0]<t2){
+  //       yesterPrice = item
+  //     }
+  //      })
+  });
+// get_yesterday_price(t1)
+  
+//TODO: 加前幾天的K棒圖、最多兩口
+
+function initEvents() {
+  guiButton.addEventListener('click', function() {
+    if (guiButtonState === 'Stop') {
+      // User clicked "Stop" -> stop animation and allow to resume
+      intervalId = clearInterval(intervalId);
+      guiButton.innerText = guiButtonState = 'Go';
+    } else {
+      // If animation has finished, recreate chart
+      if (guiButtonState === 'Restart') {
+        createChart();
+      }
+      guiButton.innerText = guiButtonState = 'Stop';
+      // Start animation:
+      redrawChart(currentIterator += 1);
+      intervalId = setInterval(function() {
+        // If we reached last available point, stop animation:
+        if (currentIterator === maxIterator) {
+          intervalId = clearInterval(intervalId);
+          currentIterator = startIterator;
+          guiButton.innerText = guiButtonState = 'Restart';
+        } else {
+          redrawChart(currentIterator += 1);
+        }
+      }, duration);
+    }
+  });
+  
+  guiSell.addEventListener('click', function() {
+    let date = new Date(globalData[0].data[currentIterator][0]);
+    let hours = date.getHours();
+    let minutes = "0" + date.getMinutes();
+    // console.log(currentIterator)
+    // console.log(globalData[0].data[currentIterator][1])
+    let tmp = 0
+    let sub_profit =0
+    if(order.innerHTML ==0){
+      order.innerHTML = '-'+globalData[0].data[currentIterator][1];
+      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
+    }
+    if(order.innerHTML >0){
+      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
+      
+      sub_profit = (globalData[0].data[currentIterator][1] - order.innerHTML )*1000
+      history.innerHTML += '<br>損益: '+sub_profit
+      tmp = parseInt(profit.innerHTML)
+      tmp = tmp+sub_profit
+      order.innerHTML = 0 
+      profit.innerHTML = tmp
+    }
+    
+  })
+  guiBuy.addEventListener('click', function() {
+    let date = new Date(globalData[0].data[currentIterator][0]);
+    let hours = date.getHours();
+    let minutes = "0" + date.getMinutes();
+    // console.log(currentIterator)
+    // console.log(globalData[0].data[currentIterator][1])
+    let tmp = 0
+    let sub_profit =0
+    if(order.innerHTML ==0){
+      order.innerHTML = globalData[0].data[currentIterator][1];
+      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
+    }
+    if(order.innerHTML <0){
+      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
+      sub_profit = -(parseInt(order.innerHTML) + parseInt(globalData[0].data[currentIterator][1]) )*1000
+      // console.log(sub_profit)
+      history.innerHTML += '<br>損益: '+sub_profit
+      tmp = parseInt(profit.innerHTML)
+      tmp = tmp+sub_profit
+      order.innerHTML = 0 
+      profit.innerHTML = tmp 
+    }
+    
+  })
+}
+
+function redrawChart(index) {
+  // Set new subtitle on every redraw
+  // console.log(globalData[0])
+  let percent = ((globalData[0].data[index][1]-pre_price)/pre_price*100).toFixed(2);
+  if(percent>=0){
+    chart.setTitle(null, {
+    text: globalData[0].data[index][1]+' ('+percent+'%)',
+    style: {
+                color: 'red',
+                fontWeight: 'bold'
+            }
+  }, false);
+  }else{
+    chart.setTitle(null, {
+    text: globalData[0].data[index][1]+' ('+percent+'%)',
+    style: {
+                color: 'green',
+                fontWeight: 'bold'
+            }
+  }, false);
+  }
+  
+
+
+  const newValues = globalData.map(series => series.data[index][1]);
+  const maxIndex = newValues.indexOf(Math.max.apply(null, newValues));
+
+  // To each series, add a point:
+  chart.series.forEach(
+    (series, seriesIndex) => {
+      const enabled = maxIndex === seriesIndex && ((index < 5) || (index % 5 === 0));
+      series.addPoint({
+          x: globalData[seriesIndex].data[index][0],
+          y: globalData[seriesIndex].data[index][1],
+          dataLabels: {
+            enabled
+          },
+          marker: {
+            enabled
+          }
+        },
+        false,
+        false,
+        false
+      );
+    }
+  );
+
+  // Now, once everything is updated, redraw chart:
+  chart.redraw({
+    duration
+  });
+}
+
+function parseData(data) {
+    // Prepare Highcharts data-format:
+    // series: [{
+    //   data: [ [x, y], [x, y], ..., [x, y]]
+    // }]
+    globalData.push({
+      name: "Price",
+      data: data.openPrice.map((p,index) => [data.timestamp[index]*1000, p])
+    });
+    
+    globalData.push({
+      name: "avgPrice",
+      data: data.avgPrice.map((p,index) => [data.timestamp[index]*1000, p])
+    });
+    globalData.push({
+      name: "volumn",
+      data: data.volumn.map((p,index) => [data.timestamp[index]*1000, p])
+    });
+    globalData[0].data.unshift([data.timestamp[0]*1000,data.openPrice[0]])
+    globalData[1].data.unshift([data.timestamp[0]*1000,data.avgPrice[0]])
+    globalData[2].data.unshift([data.timestamp[0]*1000,data.volumn[0]])
+
+  // Sort and limit dataset:
+  maxIterator = Math.max.apply(null, globalData.map(series => series.data.length - 1));
+//   console.log(maxIterator)
+}
+
+
+function createChart() {
+  let t0 = globalData[0].data[globalData[0].data.length-1][0] - 86400000*2
+  let t1 = globalData[0].data[globalData[0].data.length-1][0] - 86400000
+  // console.log(lastPrice)
+    lastPrice.map(item=>{
+      // console.log(item)
+      if(item[0]>t0 && item[0]<t1){
+        // console.log(item)
+        pre_price = item[4]
+        top_price = item[4]*1.1
+        bottom = item[4]*0.9
+        cdp = (item[2]+item[3]+2*item[4])/4
+        ah = item[2]-item[3]+cdp
+        nh = 2*cdp - item[3]
+        nl = 2*cdp - item[2]
+        al = cdp - (item[2]-item[3])
+      }
+        })
+  chart = Highcharts.chart('container', {
+    chart: {
+      type: 'line',
+      marginLeft: 100
+    },
+
+    legend: {
+      layout: 'proximate',
+      align: 'right'
+    },
+
+
+    title: {
+      floating: true,
+      align: 'left',
+      x: 80,
+      y: 10,
+      text: '3661 世芯KY'
+    },
+    subtitle: {
+      floating: true,
+      align: 'left',
+      y: 50,
+      x: 80,
+      text: Highcharts.dateFormat('%Y-%m-%d', globalData[0].data[globalData[0].data.length - 1][0]),
+      style: {
+        fontSize: '40px',
+      }
+    },
+    tooltip: {
+      split: true,
+      pointFormatter: function() {
+        var value = this.y
+        return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${value}</b><br/>`;
+      }
+    },
+
+    yAxis: [{
+      top: '10%',
+      height: '90%',
+      min: bottom, max: top_price,
+      title: {
+        text: ''
+      },
+      plotLines:[
+                    {
+                    color:'red',
+                    dashStyle:'solid',
+                    value:top_price,
+                    width:2,
+                    label: {
+                        text: top_price,
+                        align: 'left',
+                    }
+                  },
+                  {
+                    color:'green',
+                    dashStyle:'solid',
+                    value:bottom,
+                    width:2,
+                    label: {
+                        text: bottom,
+                        align: 'left',
+                    }
+                  },
+                  {
+                    color:'black',
+                    dashStyle:'solid',
+                    value:pre_price,
+                    width:2,
+                    label: {
+                        text: pre_price,
+                        align: 'left',
+                    }
+                  },
+                  {
+                    color:'black',
+                    dashStyle:'dot',
+                    value:cdp,
+                    width:2,
+                    label: {
+                        text: cdp,
+                        align: 'right',
+                    }
+                  },
+                  {
+                    color:'red',
+                    dashStyle:'dot',
+                    value:ah,
+                    width:2,
+                    label: {
+                        text: ah,
+                        align: 'right',
+                    }
+                  },
+                  {
+                    color:'red',
+                    dashStyle:'dot',
+                    value:nh,
+                    width:2,
+                    label: {
+                        text: nh,
+                        align: 'right',
+                    }
+                  }
+                  ,
+                  {
+                    color:'green',
+                    dashStyle:'dot',
+                    value:nl,
+                    width:2,
+                    label: {
+                        text: nl,
+                        align: 'right',
+                    }
+                  }
+                  ,
+                  {
+                    color:'green',
+                    dashStyle:'dot',
+                    value:al,
+                    width:2,
+                    label: {
+                        text: al,
+                        align: 'right',
+                    }
+                  }],
+      maxPadding: 0.2,
+      softMax: 1
+    },{
+                top: '80%',
+                height: '20%',
+                title:{
+                      text:'成交量',
+                  }
+              }
+            ],
+
+    xAxis: {
+      gridLineWidth: 2,
+      min: globalData[0].data[0][0],
+      max: globalData[0].data[globalData[0].data.length-1][0],
+      minRange: 7 * 24 * 60000 ,
+      type: 'datetime'
+    },
+
+    time: { timezoneOffset: offset },
+    plotOptions: {
+      series: {
+        animation: {
+          duration
+        },       
+        dataLabels: {
+          formatter: function() {
+            return this.y;
+          }
+        }
+      }
+    },
+    series: globalData.map(series => {
+      if(series.name != 'volumn'){
+        return {
+        name: series.name,
+        data: series.data.slice(0, startIterator).map(point => {
+          return {
+            x: point[0],
+            y: point[1]
+          }
+        })
+      }
+    }
+    else{
+      // console.log(series.data.slice(0, startIterator).map(point => point[1]))
+      return {
+        type: 'column',
+        name: series.name,
+        data: series.data.slice(0, startIterator).map(point => point[1]),
+        yAxis: 1
+      }
+    }
+      
+    })
+  });
+}
+    </script>
+    <style>
+        #container {
+  /* min-width: 300px; */
+  /* max-width: 800px; */
+  height: 80vh;
+  margin: 0 auto;
+}
+
+#outer-container {
+  /* max-width: 800px; */
+  /* min-width: 300px; */
+  margin: 0 auto;
+}
+
+#outer-container .controls {
+  display: table;
+  margin: 0 auto;
+}
+
+
+#start {
+    margin: 0 auto;
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .25rem;
+}
+#sell_btn {
+    margin: 0 auto;
+    color: #fff;
+    background-color: #d9534f;
+    border-color: #d9534f;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .25rem;
+}
+#sell_btn:hover {background-color: #ff0800}
+
+#sell_btn:active {
+  background-color: #ff0800;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+#buy_btn:hover {background-color: #00ff00}
+
+#buy_btn:active {
+  background-color: #00ff00;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+#buy_btn {
+    margin: 0 auto;
+    color: #fff;
+    background-color: #449d44;
+    border-color: #449d44;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .25rem;
+}
+.wrap{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+.left{
+    width: 90%;
+
+}
+#history{
+    width: 20%;
+}
+    </style>
+</body>
+</html>
