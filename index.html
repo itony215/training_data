@@ -34,7 +34,7 @@
             <span id="profit">0</span>
     </div>
     
-    <!-- <div id="container"></div> -->
+    <div id="container"></div>
   </div>
 </div>
   
@@ -45,24 +45,6 @@
         let globalData = [];
         let lastPrice=[]
 let chart;
-let cities =[
-  {
-    "name": "基隆",
-    "areas":[
-      {"name":"2ws","zip":200},
-      {"name":"sss","zip":100},
-      {"name":"fvvvv","zip":300}
-    ]
-  },
-  {
-    "name": "台北",
-    "areas":[
-      {"name":"rfv","zip":4400},
-      {"name":"sssc","zip":100},
-      {"name":"rtfvas","zip":3300}
-    ]
-  }
-]
 let duration = 500; // Determines how long the animation between new points should be take
 let startIterator = 0; // Determines how many points will be rendered on chart's init
 let currentIterator = startIterator;
@@ -76,6 +58,7 @@ let history = document.getElementById('history');
 let guiButtonState = 'Start';
 let intervalId;
 let pre_price,top_price,bottom,cdp,al,nl,ah,nh;
+let offset = new Date().getTimezoneOffset();
 Vue.component('Select', {
   props: ['value', 'options'],
   computed:{
@@ -102,63 +85,53 @@ new Vue({
     fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
     .then(res=>res.json())
     .then(stocks=>{this.stocks=stocks
-    console.log(stocks)})
+  })
   },
   data:{
-    // cities:[],
     stocks:[],
     stockIdx:0,
     dateIdx:0,
-    // cityIdx:0,
-    // areaIdx:0,
   },
   computed:{
-    // stocks(){
-    //   return stocks
-    // },
     dates(){
-      console.log(this.stocks[0].dates)
-      this.stocks[this.stockIdx].dates;
-    },
-    // cities(){
-    //   return cities;
-    // },
-    // areas(){
-    //   return cities[this.cityIdx].areas;
-    // },
-    // zip(){
-    //   return this.areas[this.areaIdx].zip;
-    // }
+      return this.stocks[this.stockIdx].dates;
+    }
   },
   watch:{
-    // cityIdx(){
-    //   this.areaIdx =0;
-    // },
     stockIdx(){
-      this.stockIdx =0;
+      load_page1(this.stocks[this.stockIdx].name)
+      this.dateIdx =0;
+
+    },
+    dateIdx(){
+      globalData = []
+      currentIterator=0
+      guiButtonState = 'Start'
+      console.log(this.stocks[this.stockIdx].name)
+      console.log(this.dates[this.dateIdx].file)
+      load_page2(this.stocks[this.stockIdx].name,this.dates[this.dateIdx].file)
     }
   },
   template: `
     <div>
-    {{stockIdx}}
-      <br/>
       <Select v-model="stockIdx" :options="stocks"/>
-      <Select v-model="dateIdx" :options="dates"/>
-      
+      <Select v-model="dateIdx" :options="dates"/> 
     </div>
     `
 
 })
-
-fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_3661.json')
+function load_page1(stock_id){
+  
+  fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_'+stock_id+'.json')
   .then(response => response.json())
   .then(data => {
     lastPrice= data
   });
+}
 // Fetch data:
-let offset = new Date().getTimezoneOffset();
+function load_page2(stock_id,filename){
 // fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
-fetch('https://raw.githubusercontent.com/itony215/test_data/main/20220818_3661.json')
+fetch('https://raw.githubusercontent.com/itony215/training_data/main/stock_all_backup/'+filename)
   .then(response => response.json())
   .then(data => {
     // console.log(data['timestamp'][0])
@@ -166,19 +139,9 @@ fetch('https://raw.githubusercontent.com/itony215/test_data/main/20220818_3661.j
     parseData(data);
     createChart();
     initEvents();
-    // get_yesterday_price(data['timestamp'][0])
-  //   console.log(globalData[0].data[globalData[0].data.length-1][0])
-  // yesterday_price = get_yesterday_price(globalData[0].data[globalData[0].data.length-1][0])
-  // let pre_price = yesterday_price
-  // console.log(pre_price)
-  // data.map(item=>{
-  //     t0 = t1 - 86400000*2
-  //     t2 = t1 - 86400000
-  //     if(item[0]>t0 && item[0]<t2){
-  //       yesterPrice = item
-  //     }
-  //      })
   });
+}
+
 // get_yesterday_price(t1)
   
 //TODO: 加前幾天的K棒圖、最多兩口
@@ -377,7 +340,7 @@ function createChart() {
       align: 'left',
       x: 80,
       y: 10,
-      text: '3661 世芯KY'
+      text: ''//'3661 世芯KY'
     },
     subtitle: {
       floating: true,
