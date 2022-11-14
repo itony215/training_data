@@ -34,7 +34,7 @@
             <span id="profit">0</span>
     </div>
     
-    <div id="container"></div>
+    <!-- <div id="container"></div> -->
   </div>
 </div>
   
@@ -99,41 +99,51 @@ Vue.component('Select', {
 new Vue({
   el: '#app',
   mounted(){
-    fetch('./data.json')
+    fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
     .then(res=>res.json())
-    .then(lessions=>{this.lessions=lessions
-    console.log(lessions)})
+    .then(stocks=>{this.stocks=stocks
+    console.log(stocks)})
   },
   data:{
     // cities:[],
-    lessions:[],
-    cityIdx:0,
-    areaIdx:0,
+    stocks:[],
+    stockIdx:0,
+    dateIdx:0,
+    // cityIdx:0,
+    // areaIdx:0,
   },
   computed:{
-    cities(){
-      return cities;
+    // stocks(){
+    //   return stocks
+    // },
+    dates(){
+      console.log(this.stocks[0].dates)
+      this.stocks[this.stockIdx].dates;
     },
-    areas(){
-      return cities[this.cityIdx].areas;
-    },
-    zip(){
-      return this.areas[this.areaIdx].zip;
-    }
+    // cities(){
+    //   return cities;
+    // },
+    // areas(){
+    //   return cities[this.cityIdx].areas;
+    // },
+    // zip(){
+    //   return this.areas[this.areaIdx].zip;
+    // }
   },
   watch:{
-    cityIdx(){
-      this.areaIdx =0;
+    // cityIdx(){
+    //   this.areaIdx =0;
+    // },
+    stockIdx(){
+      this.stockIdx =0;
     }
   },
   template: `
     <div>
-      {{cityIdx}} - {{areaIdx}} - {{zip}}
+    {{stockIdx}}
       <br/>
-      <Select v-model="cityIdx" :options="cities"/>
-      <Select v-model="areaIdx" :options="areas"/>
-      <Select v-model="areaIdx" :options="lessions"/>
-      
+      <Select v-model="stockIdx" :options="stocks"/>
+      <Select v-model="dateIdx" :options="dates"/>
       
     </div>
     `
