@@ -10,137 +10,138 @@
     <title>Tony Stock</title>
 </head>
 <body>
+  <div id="app">
+    <script>
+      Vue.component('Select', {
+    props: ['value', 'options'],
+    computed:{
+      index:{
+        get(){
+          return this.value;
+        },
+        set(val){
+          this.$emit('input', val)
+        }
+      }
+    },
+    template:`
+      <select v-model="index">
+        <option v-for="(item, idx) in options" :value="idx">
+          {{item.name}}
+        </option>
+      </select>
+      `
+  })
+  new Vue({
+    el: '#app',
+    mounted(){
+      fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
+      .then(res=>res.json())
+      .then(stocks=>{this.stocks=stocks
+    })
+    },
+    data:{
+      stocks:[],
+      stockIdx:0,
+      dateIdx:0,
+    },
+    computed:{
+      dates(){
+
+        if(this.stocks.length){
+          return this.stocks[this.stockIdx].dates;
+        }
+      }
+    },
+    watch:{
+      stockIdx(){
+        load_page1(this.stocks[this.stockIdx].name)
+        this.dateIdx =0;
+
+      },
+      dateIdx(){
+        globalData = []
+        currentIterator=0
+        guiButton.innerText = guiButtonState = 'Go'
+        intervalId = clearInterval(intervalId);
+        console.log(guiButtonState)
+        console.log(this.stocks[this.stockIdx].name)
+        console.log(this.dates[this.dateIdx].file)
+        load_page2(this.stocks[this.stockIdx].name,this.dates[this.dateIdx].file)
+      }
+    },
+    template: `
+      <div>
+        <Select v-model="stockIdx" :options="stocks"/>
+        <Select v-model="dateIdx" :options="dates"/> 
+      </div>
+      `
+
+  })
+</script>
+  </div> 
   <div class="wrap">
     <div class="left">
-      <div id="app"></div> 
-    <div id="outer-container">
       
-    <div class="controls">
-      
-        <button id="start">
-        Start
-        </button>
-        &nbsp;
-        <button id="buy_btn">
-          買進
-          </button>
-          &nbsp;
-          <button id="sell_btn">
-            賣出
-            </button>
-            &nbsp;
-            <span id="order">0</span>
-            &nbsp;
-            <span id="profit">0</span>
+      <div id="outer-container">
+        <div class="controls">
+          <button id="start">Start</button>&nbsp;
+          <button id="buy_btn">買進</button>&nbsp;
+          <button id="sell_btn">賣出</button>&nbsp;
+          <span id="order">0</span>&nbsp;
+          <span id="num">0</span>&nbsp;
+          <span id="profit">0</span>
+        </div>
+        <div id="container"></div>
+      </div>
     </div>
-    
-    <div id="container"></div>
+    <div id="history">history</div>
   </div>
-</div>
-  
-  <div id="history">history</div>
-  </div>
-</div>
-    <script>
-        let globalData = [];
-        let lastPrice=[]
-let chart;
-let duration = 500; // Determines how long the animation between new points should be take
-let startIterator = 0; // Determines how many points will be rendered on chart's init
-let currentIterator = startIterator;
-let maxIterator = 0;
-let guiButton = document.getElementById('start');
-let guiSell = document.getElementById('sell_btn');
-let guiBuy = document.getElementById('buy_btn');
-let order = document.getElementById('order');
-let profit = document.getElementById('profit');
-let history = document.getElementById('history');
-let guiButtonState = 'Start';
-let intervalId;
-let pre_price,top_price,bottom,cdp,al,nl,ah,nh;
-let offset = new Date().getTimezoneOffset();
-Vue.component('Select', {
-  props: ['value', 'options'],
-  computed:{
-    index:{
-      get(){
-        return this.value;
-      },
-      set(val){
-        this.$emit('input', val)
-      }
-    }
-  },
-  template:`
-    <select v-model="index">
-      <option v-for="(item, idx) in options" :value="idx">
-        {{item.name}}
-      </option>
-    </select>
-    `
-})
-new Vue({
-  el: '#app',
-  mounted(){
-    fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
-    .then(res=>res.json())
-    .then(stocks=>{this.stocks=stocks
-  })
-  },
-  data:{
-    stocks:[],
-    stockIdx:0,
-    dateIdx:0,
-  },
-  computed:{
-    dates(){
-      return this.stocks[this.stockIdx].dates;
-    }
-  },
-  watch:{
-    stockIdx(){
-      load_page1(this.stocks[this.stockIdx].name)
-      this.dateIdx =0;
-
-    },
-    dateIdx(){
-      globalData = []
-      currentIterator=0
-      guiButtonState = 'Start'
-      console.log(this.stocks[this.stockIdx].name)
-      console.log(this.dates[this.dateIdx].file)
-      load_page2(this.stocks[this.stockIdx].name,this.dates[this.dateIdx].file)
-    }
-  },
-  template: `
-    <div>
-      <Select v-model="stockIdx" :options="stocks"/>
-      <Select v-model="dateIdx" :options="dates"/> 
-    </div>
-    `
-
-})
-function load_page1(stock_id){
-  
-  fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_'+stock_id+'.json')
-  .then(response => response.json())
-  .then(data => {
-    lastPrice= data
-  });
-}
-// Fetch data:
-function load_page2(stock_id,filename){
-// fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
-fetch('https://raw.githubusercontent.com/itony215/training_data/main/stock_all_backup/'+filename)
-  .then(response => response.json())
-  .then(data => {
-    // console.log(data['timestamp'][0])
-    // get_yesterday_price(data['timestamp'][0])
-    parseData(data);
-    createChart();
+  <script>
+    let globalData = [];
+    let lastPrice=[]
+    let chart;
+    let duration = 500; // Determines how long the animation between new points should be take
+    let startIterator = 0; // Determines how many points will be rendered on chart's init
+    let currentIterator = startIterator;
+    let maxIterator = 0;
+    let guiButton = document.getElementById('start');
+    let guiSell = document.getElementById('sell_btn');
+    let guiBuy = document.getElementById('buy_btn');
+    let order = document.getElementById('order');
+    let profit = document.getElementById('profit');
+    let numb = document.getElementById('num');
+    let history = document.getElementById('history');
+    let guiButtonState = 'Start';
+    let intervalId;
+    let pre_price,top_price,bottom,cdp,al,nl,ah,nh;
+    let offset = new Date().getTimezoneOffset();
+    let money = 3000000;
+    let total_spend = 0;
+    let total_num = 0;
+    let total_avg = 0;
     initEvents();
-  });
-}
+    function load_page1(stock_id){
+      
+      fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_'+stock_id+'.json')
+      .then(response => response.json())
+      .then(data => {
+        lastPrice= data
+      });
+    }
+// Fetch data:
+    function load_page2(stock_id,filename){
+    // fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
+    fetch('https://raw.githubusercontent.com/itony215/training_data/main/stock_all_backup/'+filename)
+      .then(response => response.json())
+      .then(data => {
+        // console.log(data['timestamp'][0])
+        // get_yesterday_price(data['timestamp'][0])
+        parseData(data);
+        createChart();
+        
+      });
+    }
 
 // get_yesterday_price(t1)
   
@@ -181,19 +182,28 @@ function initEvents() {
     // console.log(globalData[0].data[currentIterator][1])
     let tmp = 0
     let sub_profit =0
-    if(order.innerHTML ==0){
+    if(total_num <=0){
       order.innerHTML = '-'+globalData[0].data[currentIterator][1];
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
     }
-    if(order.innerHTML >0){
+    if(total_num >0){
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
-      
-      sub_profit = (globalData[0].data[currentIterator][1] - order.innerHTML )*1000
+      sub_profit = (globalData[0].data[currentIterator][1] - total_avg )*1000
       history.innerHTML += '<br>損益: '+sub_profit
+      total_spend -= total_avg*1000
+      total_num -=1
+      total_avg = (total_spend/total_num/1000).toFixed(2)
+      
+      
+      
+      
+      
+      
       tmp = parseInt(profit.innerHTML)
       tmp = tmp+sub_profit
-      order.innerHTML = 0 
+      order.innerHTML = total_avg 
       profit.innerHTML = tmp
+      num.innerHTML = total_num
     }
     
   })
@@ -205,11 +215,18 @@ function initEvents() {
     // console.log(globalData[0].data[currentIterator][1])
     let tmp = 0
     let sub_profit =0
-    if(order.innerHTML ==0){
-      order.innerHTML = globalData[0].data[currentIterator][1];
-      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
+    if(total_num >=0){
+      if(money-globalData[0].data[currentIterator][1]*1000>0){
+        money = money-globalData[0].data[currentIterator][1]*1000
+        total_spend += globalData[0].data[currentIterator][1]*1000
+        total_num +=1
+        total_avg = (total_spend/total_num/1000).toFixed(2)
+        num.innerHTML = total_num
+        order.innerHTML = total_avg;
+        history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
+      }
     }
-    if(order.innerHTML <0){
+    if(total_num <0){
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
       sub_profit = -(parseInt(order.innerHTML) + parseInt(globalData[0].data[currentIterator][1]) )*1000
       // console.log(sub_profit)
@@ -219,7 +236,6 @@ function initEvents() {
       order.innerHTML = 0 
       profit.innerHTML = tmp 
     }
-    
   })
 }
 
