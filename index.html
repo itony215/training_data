@@ -79,19 +79,22 @@
 
   })
 </script>
+
   </div> 
   <div class="wrap">
     <div class="left">
       
       <div id="outer-container">
         <div class="controls">
+          <div><span id="order">0</span>&nbsp;
+            <span id="num">0</span>&nbsp;
+            <span id="profit">0</span>&nbsp;
+            <span id="money">3000000</span></div>
           <button id="start">Start</button>&nbsp;
           <button id="buy_btn">買進</button>&nbsp;
           <button id="sell_btn">賣出</button>&nbsp;
-          <span id="order">0</span>&nbsp;
-          <span id="num">0</span>&nbsp;
-          <span id="profit">0</span>
         </div>
+        
         <div id="container"></div>
       </div>
     </div>
@@ -110,7 +113,8 @@
     let guiBuy = document.getElementById('buy_btn');
     let order = document.getElementById('order');
     let profit = document.getElementById('profit');
-    let numb = document.getElementById('num');
+    let num = document.getElementById('num');
+    let moneystr = document.getElementById('money');
     let history = document.getElementById('history');
     let guiButtonState = 'Start';
     let intervalId;
@@ -183,18 +187,33 @@ function initEvents() {
     let tmp = 0
     let sub_profit =0
     if(total_num <=0){
-      order.innerHTML = '-'+globalData[0].data[currentIterator][1];
-      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
+      if(money-globalData[0].data[currentIterator][1]*1000>0){
+        money = money-globalData[0].data[currentIterator][1]*1000
+        moneystr.innerHTML =money
+        total_spend -= globalData[0].data[currentIterator][1]*1000
+        total_num -=1
+        total_avg = (total_spend/total_num/1000).toFixed(2)
+        num.innerHTML = total_num
+        order.innerHTML = total_avg;
+        // order.innerHTML = '-'+globalData[0].data[currentIterator][1];
+        history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
+      }
     }
+
     if(total_num >0){
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
-      sub_profit = (globalData[0].data[currentIterator][1] - total_avg )*1000
+      sub_profit = Math.floor((globalData[0].data[currentIterator][1] - total_avg )*1000)
       history.innerHTML += '<br>損益: '+sub_profit
       total_spend -= total_avg*1000
       total_num -=1
-      total_avg = (total_spend/total_num/1000).toFixed(2)
-      
-      
+      if(total_num==0){
+        total_avg = 0
+      }else{
+        total_avg = (total_spend/total_num/1000).toFixed(2)
+      }
+      money = money+globalData[0].data[currentIterator][1]*1000
+      console.log(money)
+      moneystr.innerHTML =money
       
       
       
@@ -218,6 +237,7 @@ function initEvents() {
     if(total_num >=0){
       if(money-globalData[0].data[currentIterator][1]*1000>0){
         money = money-globalData[0].data[currentIterator][1]*1000
+        moneystr.innerHTML =money
         total_spend += globalData[0].data[currentIterator][1]*1000
         total_num +=1
         total_avg = (total_spend/total_num/1000).toFixed(2)
@@ -228,13 +248,31 @@ function initEvents() {
     }
     if(total_num <0){
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
-      sub_profit = -(parseInt(order.innerHTML) + parseInt(globalData[0].data[currentIterator][1]) )*1000
+      sub_profit = -Math.floor((-parseInt(total_avg)+(parseInt(globalData[0].data[currentIterator][1])))*1000)
       // console.log(sub_profit)
       history.innerHTML += '<br>損益: '+sub_profit
+      total_spend += total_avg*1000
+      total_num +=1
+      
+      money = money+((total_avg-globalData[0].data[currentIterator][1])*1000)+total_avg*1000
+      if(total_num==0){
+        total_avg = 0
+      }else{
+        total_avg = (total_spend/total_num/1000).toFixed(2)
+      }
+      moneystr.innerHTML =money
       tmp = parseInt(profit.innerHTML)
       tmp = tmp+sub_profit
-      order.innerHTML = 0 
+      order.innerHTML = total_avg 
       profit.innerHTML = tmp 
+      num.innerHTML = total_num
+
+      
+      // tmp = parseInt(profit.innerHTML)
+      // tmp = tmp+sub_profit
+      // order.innerHTML = total_avg 
+      // profit.innerHTML = tmp
+      // num.innerHTML = total_num
     }
   })
 }
