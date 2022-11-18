@@ -218,7 +218,7 @@ function initEvents() {
       
       
       
-      tmp = parseInt(profit.innerHTML)
+      tmp = parseFloat(profit.innerHTML)
       tmp = tmp+sub_profit
       order.innerHTML = total_avg 
       profit.innerHTML = tmp
@@ -248,7 +248,7 @@ function initEvents() {
     }
     if(total_num <0){
       history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
-      sub_profit = -Math.floor((-parseInt(total_avg)+(parseInt(globalData[0].data[currentIterator][1])))*1000)
+      sub_profit = -Math.floor((-parseFloat(total_avg)+(parseFloat(globalData[0].data[currentIterator][1])))*1000)
       // console.log(sub_profit)
       history.innerHTML += '<br>損益: '+sub_profit
       total_spend += total_avg*1000
@@ -261,7 +261,7 @@ function initEvents() {
         total_avg = (total_spend/total_num/1000).toFixed(2)
       }
       moneystr.innerHTML =money
-      tmp = parseInt(profit.innerHTML)
+      tmp = parseFloat(profit.innerHTML)
       tmp = tmp+sub_profit
       order.innerHTML = total_avg 
       profit.innerHTML = tmp 
