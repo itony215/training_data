@@ -1,100 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://code.highcharts.com/highcharts.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
-    <title>Tony Stock</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+  <title>Tony Stock</title>
 </head>
+
 <body>
   <div id="app">
     <script>
       Vue.component('Select', {
-    props: ['value', 'options'],
-    computed:{
-      index:{
-        get(){
-          return this.value;
+        props: ['value', 'options'],
+        computed: {
+          index: {
+            get() {
+              return this.value;
+            },
+            set(val) {
+              this.$emit('input', val)
+            }
+          }
         },
-        set(val){
-          this.$emit('input', val)
-        }
-      }
-    },
-    template:`
+        template: `
       <select v-model="index">
         <option v-for="(item, idx) in options" :value="idx">
           {{item.name}}
         </option>
       </select>
       `
-  })
-  new Vue({
-    el: '#app',
-    mounted(){
-      fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
-      .then(res=>res.json())
-      .then(stocks=>{this.stocks=stocks
-    })
-    },
-    data:{
-      stocks:[],
-      stockIdx:0,
-      dateIdx:0,
-    },
-    computed:{
-      dates(){
+      })
+      new Vue({
+        el: '#app',
+        mounted() {
+          fetch('https://raw.githubusercontent.com/itony215/training_data/main/data_list_2022.json')
+            .then(res => res.json())
+            .then(stocks => {
+              this.stocks = stocks
+            })
+        },
+        data: {
+          stocks: [],
+          stockIdx: 0,
+          dateIdx: 0,
+        },
+        computed: {
+          dates() {
 
-        if(this.stocks.length){
-          return this.stocks[this.stockIdx].dates;
-        }
-      }
-    },
-    watch:{
-      stockIdx(){
-        load_page1(this.stocks[this.stockIdx].name)
-        this.dateIdx =0;
+            if (this.stocks.length) {
+              return this.stocks[this.stockIdx].dates;
+            }
+          }
+        },
+        watch: {
+          stockIdx() {
+            load_page1(this.stocks[this.stockIdx].name)
+            this.dateIdx = 0;
 
-      },
-      dateIdx(){
-        globalData = []
-        currentIterator=0
-        guiButton.innerText = guiButtonState = 'Go'
-        intervalId = clearInterval(intervalId);
-        console.log(guiButtonState)
-        console.log(this.stocks[this.stockIdx].name)
-        console.log(this.dates[this.dateIdx].file)
-        load_page2(this.stocks[this.stockIdx].name,this.dates[this.dateIdx].file)
-      }
-    },
-    template: `
+          },
+          dateIdx() {
+            globalData = []
+            currentIterator = 0
+            guiButton.innerText = guiButtonState = 'Go'
+            intervalId = clearInterval(intervalId);
+            console.log(guiButtonState)
+            console.log(this.stocks[this.stockIdx].name)
+            console.log(this.dates[this.dateIdx].file)
+            load_page2(this.stocks[this.stockIdx].name, this.dates[this.dateIdx].file)
+          }
+        },
+        template: `
       <div>
         <Select v-model="stockIdx" :options="stocks"/>
         <Select v-model="dateIdx" :options="dates"/> 
       </div>
       `
 
-  })
-</script>
+      })
+    </script>
 
-  </div> 
+  </div>
   <div class="wrap">
     <div class="left">
-      
+
       <div id="outer-container">
         <div class="controls">
           <div><span id="order">0</span>&nbsp;
             <span id="num">0</span>&nbsp;
             <span id="profit">0</span>&nbsp;
-            <span id="money">3000000</span></div>
+            <span id="money">3000000</span>
+          </div>
           <button id="start">Start</button>&nbsp;
           <button id="buy_btn">買進</button>&nbsp;
           <button id="sell_btn">賣出</button>&nbsp;
         </div>
-        
+
         <div id="container"></div>
       </div>
     </div>
@@ -102,7 +106,7 @@
   </div>
   <script>
     let globalData = [];
-    let lastPrice=[]
+    let lastPrice = []
     let chart;
     let duration = 500; // Determines how long the animation between new points should be take
     let startIterator = 0; // Determines how many points will be rendered on chart's init
@@ -118,529 +122,541 @@
     let history = document.getElementById('history');
     let guiButtonState = 'Start';
     let intervalId;
-    let pre_price,top_price,bottom,cdp,al,nl,ah,nh;
+    let pre_price, top_price, bottom, cdp, al, nl, ah, nh;
     let offset = new Date().getTimezoneOffset();
     let money = 3000000;
     let total_spend = 0;
     let total_num = 0;
     let total_avg = 0;
     initEvents();
-    function load_page1(stock_id){
-      
-      fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_'+stock_id+'.json')
-      .then(response => response.json())
-      .then(data => {
-        lastPrice= data
-      });
+    function load_page1(stock_id) {
+
+      fetch('https://raw.githubusercontent.com/itony215/flat_viewer_data/main/json/data_' + stock_id + '.json')
+        .then(response => response.json())
+        .then(data => {
+          lastPrice = data
+        });
     }
-// Fetch data:
-    function load_page2(stock_id,filename){
-    // fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
-    fetch('https://raw.githubusercontent.com/itony215/training_data/main/stock_all_backup/'+filename)
-      .then(response => response.json())
-      .then(data => {
-        // console.log(data['timestamp'][0])
-        // get_yesterday_price(data['timestamp'][0])
-        parseData(data);
-        createChart();
-        
-      });
+    // Fetch data:
+    function load_page2(stock_id, filename) {
+      // fetch('https://raw.githubusercontent.com/itony215/test_data/main/timeseries.json')
+      fetch('https://raw.githubusercontent.com/itony215/training_data/main/stock_all_backup/' + filename)
+        .then(response => response.json())
+        .then(data => {
+          // console.log(data['timestamp'][0])
+          // get_yesterday_price(data['timestamp'][0])
+          parseData(data);
+          createChart();
+
+        });
     }
 
-// get_yesterday_price(t1)
-  
-//TODO: 加前幾天的K棒圖、最多兩口
+    // get_yesterday_price(t1)
 
-function initEvents() {
-  guiButton.addEventListener('click', function() {
-    if (guiButtonState === 'Stop') {
-      // User clicked "Stop" -> stop animation and allow to resume
-      intervalId = clearInterval(intervalId);
-      guiButton.innerText = guiButtonState = 'Go';
-    } else {
-      // If animation has finished, recreate chart
-      if (guiButtonState === 'Restart') {
-        createChart();
-      }
-      guiButton.innerText = guiButtonState = 'Stop';
-      // Start animation:
-      redrawChart(currentIterator += 1);
-      intervalId = setInterval(function() {
-        // If we reached last available point, stop animation:
-        if (currentIterator === maxIterator) {
+    //TODO: 加前幾天的K棒圖、最多兩口
+
+    function initEvents() {
+      guiButton.addEventListener('click', function () {
+        if (guiButtonState === 'Stop') {
+          // User clicked "Stop" -> stop animation and allow to resume
           intervalId = clearInterval(intervalId);
-          currentIterator = startIterator;
-          guiButton.innerText = guiButtonState = 'Restart';
+          guiButton.innerText = guiButtonState = 'Go';
         } else {
+          // If animation has finished, recreate chart
+          if (guiButtonState === 'Restart') {
+            createChart();
+          }
+          guiButton.innerText = guiButtonState = 'Stop';
+          // Start animation:
           redrawChart(currentIterator += 1);
+          intervalId = setInterval(function () {
+            // If we reached last available point, stop animation:
+            if (currentIterator === maxIterator) {
+              intervalId = clearInterval(intervalId);
+              currentIterator = startIterator;
+              guiButton.innerText = guiButtonState = 'Restart';
+            } else {
+              redrawChart(currentIterator += 1);
+            }
+          }, duration);
         }
-      }, duration);
-    }
-  });
-  
-  guiSell.addEventListener('click', function() {
-    let date = new Date(globalData[0].data[currentIterator][0]);
-    let hours = date.getHours();
-    let minutes = "0" + date.getMinutes();
-    // console.log(currentIterator)
-    // console.log(globalData[0].data[currentIterator][1])
-    let tmp = 0
-    let sub_profit =0
-    if(total_num <=0){
-      if(money-globalData[0].data[currentIterator][1]*1000>0){
-        money = money-globalData[0].data[currentIterator][1]*1000
-        moneystr.innerHTML =money
-        total_spend -= globalData[0].data[currentIterator][1]*1000
-        total_num -=1
-        total_avg = (total_spend/total_num/1000).toFixed(2)
-        num.innerHTML = total_num
-        order.innerHTML = total_avg;
-        // order.innerHTML = '-'+globalData[0].data[currentIterator][1];
-        history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
-      }
+      });
+
+      guiSell.addEventListener('click', function () {
+        let date = new Date(globalData[0].data[currentIterator][0]);
+        let hours = date.getHours();
+        let minutes = "0" + date.getMinutes();
+        // console.log(currentIterator)
+        // console.log(globalData[0].data[currentIterator][1])
+        let tmp = 0
+        let sub_profit = 0
+        if (total_num <= 0) {
+          if (money - globalData[0].data[currentIterator][1] * 1000 > 0) {
+            money = money - globalData[0].data[currentIterator][1] * 1000
+            moneystr.innerHTML = money
+            total_spend -= globalData[0].data[currentIterator][1] * 1000
+            total_num -= 1
+            total_avg = (total_spend / total_num / 1000).toFixed(2)
+            num.innerHTML = total_num
+            order.innerHTML = total_avg;
+            // order.innerHTML = '-'+globalData[0].data[currentIterator][1];
+            history.innerHTML += '<br>' + hours + ':' + minutes.substr(-2) + '\t賣出 ' + globalData[0].data[currentIterator][1]
+          }
+        }
+
+        if (total_num > 0) {
+          history.innerHTML += '<br>' + hours + ':' + minutes.substr(-2) + '\t賣出 ' + globalData[0].data[currentIterator][1]
+          sub_profit = Math.floor((globalData[0].data[currentIterator][1] - total_avg) * 1000)
+          history.innerHTML += '<br>損益: ' + sub_profit
+          total_spend -= total_avg * 1000
+          total_num -= 1
+          if (total_num == 0) {
+            total_avg = 0
+          } else {
+            total_avg = (total_spend / total_num / 1000).toFixed(2)
+          }
+          money = money + globalData[0].data[currentIterator][1] * 1000
+          console.log(money)
+          moneystr.innerHTML = money
+
+
+
+
+          tmp = parseFloat(profit.innerHTML)
+          tmp = tmp + sub_profit
+          order.innerHTML = total_avg
+          profit.innerHTML = tmp
+          num.innerHTML = total_num
+        }
+
+      })
+      guiBuy.addEventListener('click', function () {
+        let date = new Date(globalData[0].data[currentIterator][0]);
+        let hours = date.getHours();
+        let minutes = "0" + date.getMinutes();
+        // console.log(currentIterator)
+        // console.log(globalData[0].data[currentIterator][1])
+        let tmp = 0
+        let sub_profit = 0
+        if (total_num >= 0) {
+          if (money - globalData[0].data[currentIterator][1] * 1000 > 0) {
+            money = money - globalData[0].data[currentIterator][1] * 1000
+            moneystr.innerHTML = money
+            total_spend += globalData[0].data[currentIterator][1] * 1000
+            total_num += 1
+            total_avg = (total_spend / total_num / 1000).toFixed(2)
+            num.innerHTML = total_num
+            order.innerHTML = total_avg;
+            history.innerHTML += '<br>' + hours + ':' + minutes.substr(-2) + '\t買進 ' + globalData[0].data[currentIterator][1]
+          }
+        }
+        if (total_num < 0) {
+          history.innerHTML += '<br>' + hours + ':' + minutes.substr(-2) + '\t買進 ' + globalData[0].data[currentIterator][1]
+          sub_profit = -Math.floor((-parseFloat(total_avg) + (parseFloat(globalData[0].data[currentIterator][1]))) * 1000)
+          // console.log(sub_profit)
+          history.innerHTML += '<br>損益: ' + sub_profit
+          total_spend += total_avg * 1000
+          total_num += 1
+
+          money = money + ((total_avg - globalData[0].data[currentIterator][1]) * 1000) + total_avg * 1000
+          if (total_num == 0) {
+            total_avg = 0
+          } else {
+            total_avg = (total_spend / total_num / 1000).toFixed(2)
+          }
+          moneystr.innerHTML = money
+          tmp = parseFloat(profit.innerHTML)
+          tmp = tmp + sub_profit
+          order.innerHTML = total_avg
+          profit.innerHTML = tmp
+          num.innerHTML = total_num
+
+
+          // tmp = parseInt(profit.innerHTML)
+          // tmp = tmp+sub_profit
+          // order.innerHTML = total_avg 
+          // profit.innerHTML = tmp
+          // num.innerHTML = total_num
+        }
+      })
     }
 
-    if(total_num >0){
-      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t賣出 '+ globalData[0].data[currentIterator][1]
-      sub_profit = Math.floor((globalData[0].data[currentIterator][1] - total_avg )*1000)
-      history.innerHTML += '<br>損益: '+sub_profit
-      total_spend -= total_avg*1000
-      total_num -=1
-      if(total_num==0){
-        total_avg = 0
-      }else{
-        total_avg = (total_spend/total_num/1000).toFixed(2)
+    function redrawChart(index) {
+      // Set new subtitle on every redraw
+      // console.log(globalData[0])
+      let percent = ((globalData[0].data[index][1] - pre_price) / pre_price * 100).toFixed(2);
+      if (percent >= 0) {
+        chart.setTitle(null, {
+          text: globalData[0].data[index][1] + ' (' + percent + '%)',
+          style: {
+            color: 'red',
+            fontWeight: 'bold'
+          }
+        }, false);
+      } else {
+        chart.setTitle(null, {
+          text: globalData[0].data[index][1] + ' (' + percent + '%)',
+          style: {
+            color: 'green',
+            fontWeight: 'bold'
+          }
+        }, false);
       }
-      money = money+globalData[0].data[currentIterator][1]*1000
-      console.log(money)
-      moneystr.innerHTML =money
-      
-      
-      
-      
-      tmp = parseFloat(profit.innerHTML)
-      tmp = tmp+sub_profit
-      order.innerHTML = total_avg 
-      profit.innerHTML = tmp
-      num.innerHTML = total_num
-    }
-    
-  })
-  guiBuy.addEventListener('click', function() {
-    let date = new Date(globalData[0].data[currentIterator][0]);
-    let hours = date.getHours();
-    let minutes = "0" + date.getMinutes();
-    // console.log(currentIterator)
-    // console.log(globalData[0].data[currentIterator][1])
-    let tmp = 0
-    let sub_profit =0
-    if(total_num >=0){
-      if(money-globalData[0].data[currentIterator][1]*1000>0){
-        money = money-globalData[0].data[currentIterator][1]*1000
-        moneystr.innerHTML =money
-        total_spend += globalData[0].data[currentIterator][1]*1000
-        total_num +=1
-        total_avg = (total_spend/total_num/1000).toFixed(2)
-        num.innerHTML = total_num
-        order.innerHTML = total_avg;
-        history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
-      }
-    }
-    if(total_num <0){
-      history.innerHTML += '<br>'+hours + ':' + minutes.substr(-2)+'\t買進 '+ globalData[0].data[currentIterator][1]
-      sub_profit = -Math.floor((-parseFloat(total_avg)+(parseFloat(globalData[0].data[currentIterator][1])))*1000)
-      // console.log(sub_profit)
-      history.innerHTML += '<br>損益: '+sub_profit
-      total_spend += total_avg*1000
-      total_num +=1
-      
-      money = money+((total_avg-globalData[0].data[currentIterator][1])*1000)+total_avg*1000
-      if(total_num==0){
-        total_avg = 0
-      }else{
-        total_avg = (total_spend/total_num/1000).toFixed(2)
-      }
-      moneystr.innerHTML =money
-      tmp = parseFloat(profit.innerHTML)
-      tmp = tmp+sub_profit
-      order.innerHTML = total_avg 
-      profit.innerHTML = tmp 
-      num.innerHTML = total_num
 
-      
-      // tmp = parseInt(profit.innerHTML)
-      // tmp = tmp+sub_profit
-      // order.innerHTML = total_avg 
-      // profit.innerHTML = tmp
-      // num.innerHTML = total_num
-    }
-  })
-}
 
-function redrawChart(index) {
-  // Set new subtitle on every redraw
-  // console.log(globalData[0])
-  let percent = ((globalData[0].data[index][1]-pre_price)/pre_price*100).toFixed(2);
-  if(percent>=0){
-    chart.setTitle(null, {
-    text: globalData[0].data[index][1]+' ('+percent+'%)',
-    style: {
-                color: 'red',
-                fontWeight: 'bold'
+
+      const newValues = globalData.map(series => series.data[index][1]);
+      const maxIndex = newValues.indexOf(Math.max.apply(null, newValues));
+
+      // To each series, add a point:
+      chart.series.forEach(
+        (series, seriesIndex) => {
+          const enabled = maxIndex === seriesIndex && ((index < 5) || (index % 5 === 0));
+          series.addPoint({
+            x: globalData[seriesIndex].data[index][0],
+            y: globalData[seriesIndex].data[index][1],
+            dataLabels: {
+              enabled
+            },
+            marker: {
+              enabled
             }
-  }, false);
-  }else{
-    chart.setTitle(null, {
-    text: globalData[0].data[index][1]+' ('+percent+'%)',
-    style: {
-                color: 'green',
-                fontWeight: 'bold'
-            }
-  }, false);
-  }
-  
-
-
-  const newValues = globalData.map(series => series.data[index][1]);
-  const maxIndex = newValues.indexOf(Math.max.apply(null, newValues));
-
-  // To each series, add a point:
-  chart.series.forEach(
-    (series, seriesIndex) => {
-      const enabled = maxIndex === seriesIndex && ((index < 5) || (index % 5 === 0));
-      series.addPoint({
-          x: globalData[seriesIndex].data[index][0],
-          y: globalData[seriesIndex].data[index][1],
-          dataLabels: {
-            enabled
           },
-          marker: {
-            enabled
+            false,
+            false,
+            false
+          );
+        }
+      );
+
+      // Now, once everything is updated, redraw chart:
+      chart.redraw({
+        duration
+      });
+    }
+
+    function parseData(data) {
+      // Prepare Highcharts data-format:
+      // series: [{
+      //   data: [ [x, y], [x, y], ..., [x, y]]
+      // }]
+      globalData.push({
+        name: "Price",
+        data: data.openPrice.map((p, index) => [data.timestamp[index] * 1000, p])
+      });
+
+      globalData.push({
+        name: "avgPrice",
+        data: data.avgPrice.map((p, index) => [data.timestamp[index] * 1000, p])
+      });
+      globalData.push({
+        name: "volumn",
+        data: data.volumn.map((p, index) => [data.timestamp[index] * 1000, p])
+      });
+      globalData[0].data.unshift([data.timestamp[0] * 1000, data.openPrice[0]])
+      globalData[1].data.unshift([data.timestamp[0] * 1000, data.avgPrice[0]])
+      globalData[2].data.unshift([data.timestamp[0] * 1000, data.volumn[0]])
+
+      // Sort and limit dataset:
+      maxIterator = Math.max.apply(null, globalData.map(series => series.data.length - 1));
+      //   console.log(maxIterator)
+    }
+
+
+    function createChart() {
+      let t0 = globalData[0].data[globalData[0].data.length - 1][0] - 86400000 * 2
+      let t1 = globalData[0].data[globalData[0].data.length - 1][0] - 86400000
+      // console.log(lastPrice)
+      lastPrice.map(item => {
+        // console.log(item)
+        if (item[0] > t0 && item[0] < t1) {
+          // console.log(item)
+          pre_price = item[4]
+          top_price = item[4] * 1.1
+          bottom = item[4] * 0.9
+          cdp = (item[2] + item[3] + 2 * item[4]) / 4
+          ah = item[2] - item[3] + cdp
+          nh = 2 * cdp - item[3]
+          nl = 2 * cdp - item[2]
+          al = cdp - (item[2] - item[3])
+        }
+      })
+      chart = Highcharts.chart('container', {
+        chart: {
+          type: 'line',
+          marginLeft: 100
+        },
+
+        legend: {
+          layout: 'proximate',
+          align: 'right'
+        },
+
+
+        title: {
+          floating: true,
+          align: 'left',
+          x: 80,
+          y: 10,
+          text: ''//'3661 世芯KY'
+        },
+        subtitle: {
+          floating: true,
+          align: 'left',
+          y: 50,
+          x: 80,
+          text: Highcharts.dateFormat('%Y-%m-%d', globalData[0].data[globalData[0].data.length - 1][0]),
+          style: {
+            fontSize: '40px',
           }
         },
-        false,
-        false,
-        false
-      );
-    }
-  );
+        tooltip: {
+          split: true,
+          pointFormatter: function () {
+            var value = this.y
+            return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${value}</b><br/>`;
+          }
+        },
 
-  // Now, once everything is updated, redraw chart:
-  chart.redraw({
-    duration
-  });
-}
-
-function parseData(data) {
-    // Prepare Highcharts data-format:
-    // series: [{
-    //   data: [ [x, y], [x, y], ..., [x, y]]
-    // }]
-    globalData.push({
-      name: "Price",
-      data: data.openPrice.map((p,index) => [data.timestamp[index]*1000, p])
-    });
-    
-    globalData.push({
-      name: "avgPrice",
-      data: data.avgPrice.map((p,index) => [data.timestamp[index]*1000, p])
-    });
-    globalData.push({
-      name: "volumn",
-      data: data.volumn.map((p,index) => [data.timestamp[index]*1000, p])
-    });
-    globalData[0].data.unshift([data.timestamp[0]*1000,data.openPrice[0]])
-    globalData[1].data.unshift([data.timestamp[0]*1000,data.avgPrice[0]])
-    globalData[2].data.unshift([data.timestamp[0]*1000,data.volumn[0]])
-
-  // Sort and limit dataset:
-  maxIterator = Math.max.apply(null, globalData.map(series => series.data.length - 1));
-//   console.log(maxIterator)
-}
-
-
-function createChart() {
-  let t0 = globalData[0].data[globalData[0].data.length-1][0] - 86400000*2
-  let t1 = globalData[0].data[globalData[0].data.length-1][0] - 86400000
-  // console.log(lastPrice)
-    lastPrice.map(item=>{
-      // console.log(item)
-      if(item[0]>t0 && item[0]<t1){
-        // console.log(item)
-        pre_price = item[4]
-        top_price = item[4]*1.1
-        bottom = item[4]*0.9
-        cdp = (item[2]+item[3]+2*item[4])/4
-        ah = item[2]-item[3]+cdp
-        nh = 2*cdp - item[3]
-        nl = 2*cdp - item[2]
-        al = cdp - (item[2]-item[3])
-      }
-        })
-  chart = Highcharts.chart('container', {
-    chart: {
-      type: 'line',
-      marginLeft: 100
-    },
-
-    legend: {
-      layout: 'proximate',
-      align: 'right'
-    },
-
-
-    title: {
-      floating: true,
-      align: 'left',
-      x: 80,
-      y: 10,
-      text: ''//'3661 世芯KY'
-    },
-    subtitle: {
-      floating: true,
-      align: 'left',
-      y: 50,
-      x: 80,
-      text: Highcharts.dateFormat('%Y-%m-%d', globalData[0].data[globalData[0].data.length - 1][0]),
-      style: {
-        fontSize: '40px',
-      }
-    },
-    tooltip: {
-      split: true,
-      pointFormatter: function() {
-        var value = this.y
-        return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${value}</b><br/>`;
-      }
-    },
-
-    yAxis: [{
-      top: '10%',
-      height: '90%',
-      min: bottom, max: top_price,
-      title: {
-        text: ''
-      },
-      plotLines:[
-                    {
-                    color:'red',
-                    dashStyle:'solid',
-                    value:top_price,
-                    width:2,
-                    label: {
-                        text: top_price,
-                        align: 'left',
-                    }
-                  },
-                  {
-                    color:'green',
-                    dashStyle:'solid',
-                    value:bottom,
-                    width:2,
-                    label: {
-                        text: bottom,
-                        align: 'left',
-                    }
-                  },
-                  {
-                    color:'black',
-                    dashStyle:'solid',
-                    value:pre_price,
-                    width:2,
-                    label: {
-                        text: pre_price,
-                        align: 'left',
-                    }
-                  },
-                  {
-                    color:'black',
-                    dashStyle:'dot',
-                    value:cdp,
-                    width:2,
-                    label: {
-                        text: cdp,
-                        align: 'right',
-                    }
-                  },
-                  {
-                    color:'red',
-                    dashStyle:'dot',
-                    value:ah,
-                    width:2,
-                    label: {
-                        text: ah,
-                        align: 'right',
-                    }
-                  },
-                  {
-                    color:'red',
-                    dashStyle:'dot',
-                    value:nh,
-                    width:2,
-                    label: {
-                        text: nh,
-                        align: 'right',
-                    }
-                  }
-                  ,
-                  {
-                    color:'green',
-                    dashStyle:'dot',
-                    value:nl,
-                    width:2,
-                    label: {
-                        text: nl,
-                        align: 'right',
-                    }
-                  }
-                  ,
-                  {
-                    color:'green',
-                    dashStyle:'dot',
-                    value:al,
-                    width:2,
-                    label: {
-                        text: al,
-                        align: 'right',
-                    }
-                  }],
-      maxPadding: 0.2,
-      softMax: 1
-    },{
-                top: '80%',
-                height: '20%',
-                title:{
-                      text:'成交量',
-                  }
+        yAxis: [{
+          top: '10%',
+          height: '90%',
+          min: bottom, max: top_price,
+          title: {
+            text: ''
+          },
+          plotLines: [
+            {
+              color: 'red',
+              dashStyle: 'solid',
+              value: top_price,
+              width: 2,
+              label: {
+                text: top_price,
+                align: 'left',
               }
-            ],
-
-    xAxis: {
-      gridLineWidth: 2,
-      min: globalData[0].data[0][0],
-      max: globalData[0].data[globalData[0].data.length-1][0],
-      minRange: 7 * 24 * 60000 ,
-      type: 'datetime'
-    },
-
-    time: { timezoneOffset: offset },
-    plotOptions: {
-      series: {
-        animation: {
-          duration
-        },       
-        dataLabels: {
-          formatter: function() {
-            return this.y;
+            },
+            {
+              color: 'green',
+              dashStyle: 'solid',
+              value: bottom,
+              width: 2,
+              label: {
+                text: bottom,
+                align: 'left',
+              }
+            },
+            {
+              color: 'black',
+              dashStyle: 'solid',
+              value: pre_price,
+              width: 2,
+              label: {
+                text: pre_price,
+                align: 'left',
+              }
+            },
+            {
+              color: 'black',
+              dashStyle: 'dot',
+              value: cdp,
+              width: 2,
+              label: {
+                text: cdp,
+                align: 'right',
+              }
+            },
+            {
+              color: 'red',
+              dashStyle: 'dot',
+              value: ah,
+              width: 2,
+              label: {
+                text: ah,
+                align: 'right',
+              }
+            },
+            {
+              color: 'red',
+              dashStyle: 'dot',
+              value: nh,
+              width: 2,
+              label: {
+                text: nh,
+                align: 'right',
+              }
+            }
+            ,
+            {
+              color: 'green',
+              dashStyle: 'dot',
+              value: nl,
+              width: 2,
+              label: {
+                text: nl,
+                align: 'right',
+              }
+            }
+            ,
+            {
+              color: 'green',
+              dashStyle: 'dot',
+              value: al,
+              width: 2,
+              label: {
+                text: al,
+                align: 'right',
+              }
+            }],
+          maxPadding: 0.2,
+          softMax: 1
+        }, {
+          top: '80%',
+          height: '20%',
+          title: {
+            text: '成交量',
           }
         }
-      }
-    },
-    series: globalData.map(series => {
-      if(series.name != 'volumn'){
-        return {
-        name: series.name,
-        data: series.data.slice(0, startIterator).map(point => {
-          return {
-            x: point[0],
-            y: point[1]
+        ],
+
+        xAxis: {
+          gridLineWidth: 2,
+          min: globalData[0].data[0][0],
+          max: globalData[0].data[globalData[0].data.length - 1][0],
+          minRange: 7 * 24 * 60000,
+          type: 'datetime'
+        },
+
+        time: { timezoneOffset: offset },
+        plotOptions: {
+          series: {
+            animation: {
+              duration
+            },
+            dataLabels: {
+              formatter: function () {
+                return this.y;
+              }
+            }
           }
+        },
+        series: globalData.map(series => {
+          if (series.name != 'volumn') {
+            return {
+              name: series.name,
+              data: series.data.slice(0, startIterator).map(point => {
+                return {
+                  x: point[0],
+                  y: point[1]
+                }
+              })
+            }
+          }
+          else {
+            // console.log(series.data.slice(0, startIterator).map(point => point[1]))
+            return {
+              type: 'column',
+              name: series.name,
+              data: series.data.slice(0, startIterator).map(point => point[1]),
+              yAxis: 1
+            }
+          }
+
         })
-      }
+      });
     }
-    else{
-      // console.log(series.data.slice(0, startIterator).map(point => point[1]))
-      return {
-        type: 'column',
-        name: series.name,
-        data: series.data.slice(0, startIterator).map(point => point[1]),
-        yAxis: 1
-      }
+  </script>
+  <style>
+    #container {
+      /* min-width: 300px; */
+      /* max-width: 800px; */
+      height: 80vh;
+      margin: 0 auto;
     }
-      
-    })
-  });
-}
-    </script>
-    <style>
-        #container {
-  /* min-width: 300px; */
-  /* max-width: 800px; */
-  height: 80vh;
-  margin: 0 auto;
-}
 
-#outer-container {
-  /* max-width: 800px; */
-  /* min-width: 300px; */
-  margin: 0 auto;
-}
+    #outer-container {
+      /* max-width: 800px; */
+      /* min-width: 300px; */
+      margin: 0 auto;
+    }
 
-#outer-container .controls {
-  display: table;
-  margin: 0 auto;
-}
+    #outer-container .controls {
+      display: table;
+      margin: 0 auto;
+    }
 
 
-#start {
-    margin: 0 auto;
-    color: #fff;
-    background-color: #007bff;
-    border-color: #007bff;
-    border: 1px solid transparent;
-    padding: .375rem .75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    border-radius: .25rem;
-}
-#sell_btn {
-    margin: 0 auto;
-    color: #fff;
-    background-color: #d9534f;
-    border-color: #d9534f;
-    border: 1px solid transparent;
-    padding: .375rem .75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    border-radius: .25rem;
-}
-#sell_btn:hover {background-color: #ff0800}
+    #start {
+      margin: 0 auto;
+      color: #fff;
+      background-color: #007bff;
+      border-color: #007bff;
+      border: 1px solid transparent;
+      padding: .375rem .75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      border-radius: .25rem;
+    }
 
-#sell_btn:active {
-  background-color: #ff0800;
-  box-shadow: 0 5px #666;
-  transform: translateY(4px);
-}
-#buy_btn:hover {background-color: #00ff00}
+    #sell_btn {
+      margin: 0 auto;
+      color: #fff;
+      background-color: #d9534f;
+      border-color: #d9534f;
+      border: 1px solid transparent;
+      padding: .375rem .75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      border-radius: .25rem;
+    }
 
-#buy_btn:active {
-  background-color: #00ff00;
-  box-shadow: 0 5px #666;
-  transform: translateY(4px);
-}
-#buy_btn {
-    margin: 0 auto;
-    color: #fff;
-    background-color: #449d44;
-    border-color: #449d44;
-    border: 1px solid transparent;
-    padding: .375rem .75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    border-radius: .25rem;
-}
-.wrap{
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-}
-.left{
-    width: 90%;
+    #sell_btn:hover {
+      background-color: #ff0800
+    }
 
-}
-#history{
-    width: 20%;
-}
-    </style>
+    #sell_btn:active {
+      background-color: #ff0800;
+      box-shadow: 0 5px #666;
+      transform: translateY(4px);
+    }
+
+    #buy_btn:hover {
+      background-color: #00ff00
+    }
+
+    #buy_btn:active {
+      background-color: #00ff00;
+      box-shadow: 0 5px #666;
+      transform: translateY(4px);
+    }
+
+    #buy_btn {
+      margin: 0 auto;
+      color: #fff;
+      background-color: #449d44;
+      border-color: #449d44;
+      border: 1px solid transparent;
+      padding: .375rem .75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      border-radius: .25rem;
+    }
+
+    .wrap {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .left {
+      width: 90%;
+
+    }
+
+    #history {
+      width: 20%;
+    }
+  </style>
 </body>
+
 </html>
